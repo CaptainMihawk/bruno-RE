@@ -32,11 +32,9 @@ jobs:
           shell: ${{ matrix.shell }}
 
       - name: Build web app
-        shell: ${{ matrix.shell }}
         run: npm run build:web
 
       - name: Build Electron distribution
-        shell: ${{ matrix.shell }}
         run: node scripts/build-electron.js
 
       - name: Upload artifact
