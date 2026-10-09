@@ -1,0 +1,69 @@
+name: Custom Release (Linux & Windows)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            shell: bash
+            pattern: 'packages/bruno-electron/out/*.AppImage'
+          - name: Windows
+            os: windows-latest
+            shell: pwsh
+            pattern: 'packages/bruno-electron/out/*.exe'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node Dependencies
+        uses: ./.github/actions/common/setup-node-deps
+        with:
+          shell: ${{ matrix.shell }}
+
+      - name: Build web app
+        shell: ${{ matrix.shell }}
+        run: npm run build:web
+
+      - name: Build Electron distribution
+        shell: ${{ matrix.shell }}
+        run: node scripts/build-electron.js
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bruno-${{ matrix.name }}
+          path: ${{ matrix.pattern }}
+          if-no-files-found: error
+
+  release:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="custom-${{ github.run_number }}"
+          gh release create "$TAG" artifacts/* \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "Bruno custom build $TAG" \
+            --notes "Build gerado a partir de ${{ github.sha }} (Linux AppImage e Windows instalador)."
