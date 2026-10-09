@@ -2,6 +2,11 @@ name: Custom Release (Linux & Windows)
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão base (o sufixo -custom.<execução> é adicionado automaticamente)'
+        required: true
+        default: '4.3.0'
 
 permissions:
   contents: write
@@ -34,6 +39,9 @@ jobs:
       - name: Build web app
         run: npm run build:web
 
+      - name: Set app version
+        run: npm version "${{ inputs.version }}-custom.${{ github.run_number }}" --no-git-tag-version --workspace=packages/bruno-electron
+
       - name: Build Electron distribution
         run: node scripts/build-electron.js
 
@@ -59,7 +67,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="custom-${{ github.run_number }}"
+          TAG="v${{ inputs.version }}-custom.${{ github.run_number }}"
           gh release create "$TAG" artifacts/* \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
