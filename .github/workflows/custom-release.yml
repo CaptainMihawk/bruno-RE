@@ -7,6 +7,10 @@ on:
         description: 'Versão base (o sufixo -custom.<execução> é adicionado automaticamente)'
         required: true
         default: '4.3.0'
+      previous_tag:
+        description: 'Tag anterior usada para gerar as notas (Full Changelog)'
+        required: true
+        default: 'v4.2.1'
 
 permissions:
   contents: write
@@ -71,5 +75,6 @@ jobs:
           gh release create "$TAG" artifacts/* \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
-            --title "Bruno custom build $TAG" \
-            --notes "Build gerado a partir de ${{ github.sha }} (Linux AppImage e Windows instalador)."
+            --title "$TAG" \
+            --generate-notes \
+            --notes-start-tag "${{ inputs.previous_tag }}"
